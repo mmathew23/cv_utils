@@ -20,9 +20,15 @@ def extract_frames_from_folder(
         print(f"Extracted {total_extracted} frames from {video_path}")
 
 
-def process_chunk(args):
+def process_chunk(
+    video_path: Union[str, os.PathLike],
+    output_folder: Union[str, os.PathLike],
+    start_frame: int,
+    end_frame: int,
+    batch_size: int
+):
     """Process a chunk of frames"""
-    video_path, output_folder, start_frame, end_frame, batch_size = args
+    # video_path, output_folder, start_frame, end_frame, batch_size = args
 
     vidcap = cv2.VideoCapture(video_path)
     vidcap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
@@ -47,7 +53,11 @@ def process_chunk(args):
     print(f"Processed frames {start_frame} to {end_frame}")
 
 
-def extract_frames(video_path, output_folder, batch_size=50):
+def extract_frames(
+    video_path: Union[str, os.PathLike],
+    output_folder: Union[str, os.PathLike],
+    batch_size: int = 50
+):
     """Extract frames from a video using multiprocessing"""
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -58,9 +68,10 @@ def extract_frames(video_path, output_folder, batch_size=50):
 
     chunk_size = total_frames // cores
     chunks = [(i*chunk_size, (i+1)*chunk_size - 1) for i in range(cores)]
-    chunks[-1] = (chunks[-1][0], total_frames - 1)  # Adjust the last chunk to include any remaining frames
+    # Adjust the last chunk to include any remaining frames
+    chunks[-1] = (chunks[-1][0], total_frames - 1)
 
     args = [(video_path, output_folder, start, end, batch_size) for start, end in chunks]
-    
+
     with Pool(cores) as pool:
-        pool.map(process_chunk, args)
+        pool.starmap(process_chunk, args)
